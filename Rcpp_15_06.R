@@ -24,13 +24,13 @@ C Code:
   }
 Rcpp code:
   cppFunction('int signR(int x){
-    if(x>0)
-      return 1;
-    else if(x==0)
-      return 0;
-    else 
-      return -1;
-  }')
+              if(x>0)
+              return 1;
+              else if(x==0)
+              return 0;
+              else 
+              return -1;
+              }')
 
 #Vector input and scalar output
 sumR<- function(x){
@@ -39,18 +39,18 @@ sumR<- function(x){
     total <-total + x[i]
   }
   total
-  }
+}
 C++ code:
-cppFunction('double sumC(NumericVector x){
-  double total = 0;
-  int i=0;
-  int len = x.size();
-  for(i=0;i<len;i++)
-  {
-    total = total + x[i];
-  }
-  return total;
-}')
+  cppFunction('double sumC(NumericVector x){
+              double total = 0;
+              int i=0;
+              int len = x.size();
+              for(i=0;i<len;i++)
+{
+              total = total + x[i];
+}
+              return total;
+              }')
 #Vector input vector output
 
 pdistR <- function(x, ys){
@@ -69,12 +69,12 @@ NumericVector pdisC(double x, NumericVector ys)
 }
 cppFunction('NumericVector pdistC(double x, NumericVector ys)
 {
-  int n = ys.size();
-  NumericVector out(n);
-  for(int i = 0; i< n ; i++) {
-    out[i]=sqrt(pow(x - ys[i],2.0));
-  }
-  return out;
+            int n = ys.size();
+            NumericVector out(n);
+            for(int i = 0; i< n ; i++) {
+            out[i]=sqrt(pow(x - ys[i],2.0));
+            }
+            return out;
 }')
 
 
@@ -190,6 +190,129 @@ List scal_mis()
   String chr_s=NA_STRING;
   bool lgl_s = NA_LOGICAL;
   double num_s = NA_REAL;
+  List missing_values()
   
   return List::create(int_s,chr_s,lgl_s,num_s);
+}
+#Vector
+{
+  return List::create(NumericVector::create(NA_REAL),IntegerVector::create(NA_INTEGER),LogicalVector::create(NA_LOGICAL),CharacterVector::create(NA_STRING));
+}
+#Check if the number is missing
+#include <Rcpp.h>
+using namespace Rcpp;
+// [[Rcpp::export]]
+LogicalVector is_naC(NumericalVector x)
+{
+  int n = x.size();
+  LogicalVector out(n);
+  
+  for(int i = 0 ; i < n ; i++)
+  {
+    out[i] = LogicalVector::is.na(x[i]);
+  }
+  
+  return out;
+}
+
+
+##Sugar Use
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+bool any_naC(NumericVector x) {
+  return is_true(any(is_na(x)));
+}
+#STL
+#How to use iterators
+#include <Rcpp.h>
+using namespace Rcpp;
+// [[Rcpp::export]]
+double sum4(NumericVector x)
+{
+  double total = 0.0;
+  NumericVector::iterator it;
+  for(it = x.begin() ;it != x.end();++it)
+  {
+    if(NumericVector::is_na(*it) == FALSE)
+    {
+      total += *it;
+    }
+  }
+  
+  return total;
+}
+
+#Accumulate function
+#include <Rcpp.h>
+
+using namespace Rcpp;
+// [[Rcpp::export]]
+double sum4(NumericVector x)
+{
+  return std::accumulate(x.begin(), x.end(), 0.0);
+}
+
+#include <Rcpp.h>
+
+using namespace Rcpp;
+// [[Rcpp::export]]
+double sum4(NumericVector x)
+{
+  return std::accumulate(x.begin(), x.end(), 0.0);
+}
+
+
+##algorithm
+#include <Rcpp.h>
+
+using namespace Rcpp;
+// [[Rcpp::export]]
+
+IntegerVector findInterval2(NumericVector a, NumericVector y)
+{
+  IntegerVector out(a.size());
+  NumericVector::iterator it, pos;
+  IntegerVector::iterator out_it;
+  
+  for(it = a.begin(), out_it = out.begin(); it != a.end(); ++it,++out_it)
+  {
+    pos = std::upper_bound(y.begin(),y.end(),*it);
+    *out_it = std::distance(y.begin(),pos);
+  }
+  return out;
+}
+
+#Vectors
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+List rleC(NumericVector x) {
+  std::vector<int> lengths;
+  std::vector<double> values;
+  
+  // Initialise first value
+  int i = 0;
+  double prev = x[0];
+  values.push_back(prev);
+  lengths.push_back(1);
+  
+  NumericVector::iterator it;
+  for(it = x.begin() + 1; it != x.end(); ++it) {
+    if (prev == *it) {
+      lengths[i]++;
+    } else {
+      values.push_back(*it);
+      lengths.push_back(1);
+      
+      i++;
+      prev = *it;
+    }
+  }
+  
+  return List::create(
+    _["lengths"] = lengths, 
+    _["values"] = values
+  );
 }
